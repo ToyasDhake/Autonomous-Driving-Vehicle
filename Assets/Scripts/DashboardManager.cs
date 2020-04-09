@@ -32,4 +32,19 @@ public class DashboardManager : MonoBehaviour
     {
         SceneManager.LoadScene(2);
     }
+
+    public void loadTrainComplex()
+    {
+        SceneManager.LoadScene(3);
+    }
+
+    public void loadTestSimple()
+    {
+        SceneManager.LoadScene(4);
+    }
+
+    public void loadTestComplex()
+    {
+        SceneManager.LoadScene(5);
+    }
 }
