@@ -11,6 +11,9 @@ public class TestComplexManager : MonoBehaviour
     private float[][][] weights = new float[3][][];
     private NeuralNetwork net;
     public GameObject individual;
+    private bool follow = false;
+    public GameObject camera;
+    private CarController boomer;
 
     void Start()
     {
@@ -50,17 +53,38 @@ public class TestComplexManager : MonoBehaviour
         }
         reader.Close();
         net = new NeuralNetwork(weights);
-        CarController boomer = ((GameObject)Instantiate(individual, new Vector3(0, 0, 0), transform.rotation)).transform.GetChild(0).GetComponent("CarController") as CarController;
+        boomer = ((GameObject)Instantiate(individual, new Vector3(0, 0, 0), transform.rotation)).transform.GetChild(0).GetComponent("CarController") as CarController;
         boomer.Init(net);
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+        if (follow)
+        {
+            Vector3 cameraRotation = new Vector3(65, 0, 0);
+            camera.transform.rotation = Quaternion.Euler(cameraRotation);
+            Vector3 tempVector3 = boomer.transform.GetChild(0).transform.position;
+            tempVector3[1] += 10;
+            tempVector3[2] -= 5;
+            camera.transform.position = tempVector3;
+
+        }
+        else
+        {
+            Vector3 cameraRotation = new Vector3(90, 0, 0);
+            camera.transform.rotation = Quaternion.Euler(cameraRotation);
+            Vector3 tempVector3 = new Vector3(-16, 77, -20);
+            camera.transform.position = tempVector3;
+        }
     }
     public void back()
     {
         SceneManager.LoadScene(0);
+    }
+
+    public void followToggle()
+    {
+        follow = !follow;
     }
 }

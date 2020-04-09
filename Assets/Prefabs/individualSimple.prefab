@@ -11168,15 +11168,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 400050, guid: 50edf3b3729597c42903e2de8674a97f, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -6.7
+      value: -6.764636
       objectReference: {fileID: 0}
     - target: {fileID: 400050, guid: 50edf3b3729597c42903e2de8674a97f, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: -0.3727264
       objectReference: {fileID: 0}
     - target: {fileID: 400050, guid: 50edf3b3729597c42903e2de8674a97f, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -4.5
+      value: 0.1245235
       objectReference: {fileID: 0}
     - target: {fileID: 400050, guid: 50edf3b3729597c42903e2de8674a97f, type: 3}
       propertyPath: m_LocalRotation.x
@@ -11209,6 +11209,18 @@ PrefabInstance:
     - target: {fileID: 400050, guid: 50edf3b3729597c42903e2de8674a97f, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400050, guid: 50edf3b3729597c42903e2de8674a97f, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 400050, guid: 50edf3b3729597c42903e2de8674a97f, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 400050, guid: 50edf3b3729597c42903e2de8674a97f, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.7
       objectReference: {fileID: 0}
     - target: {fileID: 11400006, guid: 50edf3b3729597c42903e2de8674a97f, type: 3}
       propertyPath: carController
