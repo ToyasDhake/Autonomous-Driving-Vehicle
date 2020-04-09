@@ -5,7 +5,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using System.IO;
 
-public class TrainSimpleManager : MonoBehaviour
+public class TrainComplexManager : MonoBehaviour
 {
     public GameObject individual;
 
@@ -47,7 +47,6 @@ public class TrainSimpleManager : MonoBehaviour
                 {
                     File.WriteAllText(path, "");
                 }
-
                 for (int i = 0; i < nets[populationSize - 1].weights.Length; i++)
                 {
                     for (int j = 0; j < nets[populationSize - 1].weights[i].Length; j++)
@@ -105,7 +104,7 @@ public class TrainSimpleManager : MonoBehaviour
         {
             Vector3 cameraRotation = new Vector3(90, 0, 0);
             camera.transform.rotation = Quaternion.Euler(cameraRotation);
-            Vector3 tempVector3 = new Vector3(134, 147, -38);
+            Vector3 tempVector3 = new Vector3(182, 249, -26.5f);
             camera.transform.position = tempVector3;
         }
     }
@@ -125,7 +124,7 @@ public class TrainSimpleManager : MonoBehaviour
 
         for (int i = 0; i < populationSize; i++)
         {
-            CarController boomer = (((GameObject)Instantiate(individual, new Vector3((i % 5) * 60, 0, (i / 5) * (-80)), transform.rotation)).transform.GetChild(0).GetComponent("CarController") as CarController);
+            CarController boomer = (((GameObject)Instantiate(individual, new Vector3((i % 5) * 100, 0, (i / 5) * (-80)), transform.rotation)).transform.GetChild(0).GetComponent("CarController") as CarController);
             boomer.Init(nets[i]);
             boomerangList.Add(boomer);
 
