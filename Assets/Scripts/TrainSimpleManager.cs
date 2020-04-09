@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-
-public class DashboardManager : MonoBehaviour
+public class TrainSimpleManager : MonoBehaviour
 {
     // Start is called before the first frame update
     void Start()
@@ -18,18 +17,8 @@ public class DashboardManager : MonoBehaviour
         
     }
 
-    public void exitApplication()
+    public void back()
     {
-        Application.Quit();
-    }
-
-    public void loadManualCarControl()
-    {
-        SceneManager.LoadScene(1);
-    }
-
-    public void loadTrainSimple()
-    {
-        SceneManager.LoadScene(2);
+        SceneManager.LoadScene(0);
     }
 }
