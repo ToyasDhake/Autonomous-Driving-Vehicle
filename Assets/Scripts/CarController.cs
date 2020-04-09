@@ -5,7 +5,7 @@ using System.Collections;
 
 
 
-public class CarManualController : MonoBehaviour
+public class CarController : MonoBehaviour
 {
     [SerializeField] private WheelCollider[] m_WheelColliders = new WheelCollider[4];
     [SerializeField] private GameObject[] m_WheelMeshes = new GameObject[4];
@@ -25,9 +25,21 @@ public class CarManualController : MonoBehaviour
 
 
 
+    private bool initilized = false;
+    public bool alive = true;
+    private NeuralNetwork net;
 
+
+    // the car controller we want to use
+    [Header("Sensors")]
+    public float sensorRange;
+    public Vector3 sensorFrontPositon;
+    public float sensorOffset;
+    public float sensorRot;
+
+    private bool startPoint = false;
     private Quaternion[] m_WheelMeshLocalRotations;
-
+    ArrayList colliders = new ArrayList();
     private float m_SteerAngle;
     private int m_GearNum;
     private float m_GearFactor;
@@ -43,6 +55,7 @@ public class CarManualController : MonoBehaviour
     public float Revs { get; private set; }
     public float AccelInput { get; private set; }
 
+    // Use this for initialization
     private void Start()
     {
         m_WheelMeshLocalRotations = new Quaternion[4];
@@ -56,7 +69,6 @@ public class CarManualController : MonoBehaviour
 
         m_Rigidbody = GetComponent<Rigidbody>();
         m_CurrentTorque = m_FullTorqueOverAllWheels - (m_TractionControl * m_FullTorqueOverAllWheels);
-
     }
 
 
@@ -149,11 +161,8 @@ public class CarManualController : MonoBehaviour
             m_WheelColliders[2].brakeTorque = hbTorque;
             m_WheelColliders[3].brakeTorque = hbTorque;
         }
-
-
         CalculateRevs();
         GearChanging();
-
         AddDownForce();
         TractionControl();
     }
@@ -162,31 +171,20 @@ public class CarManualController : MonoBehaviour
     private void CapSpeed()
     {
         float speed = m_Rigidbody.velocity.magnitude;
-
-
         speed *= 2.23693629f;
         if (speed > m_Topspeed)
             m_Rigidbody.velocity = (m_Topspeed / 2.23693629f) * m_Rigidbody.velocity.normalized;
-
-
-
     }
 
 
     private void ApplyDrive(float accel, float footbrake)
     {
-
         float thrustTorque;
-
         thrustTorque = accel * (m_CurrentTorque / 4f);
         for (int i = 0; i < 4; i++)
         {
             m_WheelColliders[i].motorTorque = thrustTorque;
         }
-
-
-
-
         for (int i = 0; i < 4; i++)
         {
             if (CurrentSpeed > 5 && Vector3.Angle(transform.forward, m_Rigidbody.velocity) < 50f)
@@ -209,9 +207,8 @@ public class CarManualController : MonoBehaviour
             WheelHit wheelhit;
             m_WheelColliders[i].GetGroundHit(out wheelhit);
             if (wheelhit.normal == Vector3.zero)
-                return;
+                return; // wheels arent on the ground so dont realign the rigidbody velocity
         }
-
         if (Mathf.Abs(m_OldRotation - transform.eulerAngles.y) < 10f)
         {
             var turnadjust = (transform.eulerAngles.y - m_OldRotation) * m_SteerHelper;
@@ -222,24 +219,23 @@ public class CarManualController : MonoBehaviour
     }
 
 
+    // this is used to add more grip in relation to speed
     private void AddDownForce()
     {
         m_WheelColliders[0].attachedRigidbody.AddForce(-transform.up * m_Downforce *
                                                      m_WheelColliders[0].attachedRigidbody.velocity.magnitude);
     }
 
+
+    // crude traction control that reduces the power to wheel if the car is wheel spinning too much
     private void TractionControl()
     {
         WheelHit wheelHit;
-
-        // loop through all wheels
         for (int i = 0; i < 4; i++)
         {
             m_WheelColliders[i].GetGroundHit(out wheelHit);
-
             AdjustTorque(wheelHit.forwardSlip);
         }
-
     }
 
 
@@ -260,17 +256,116 @@ public class CarManualController : MonoBehaviour
     }
 
 
-
-
     private void FixedUpdate()
     {
-        // pass the input to the car!
-        float h = Input.GetAxis("Horizontal");
-        float v = Input.GetAxis("Vertical");
-        Move(h, v, v, 0f);
-
-
+        if (initilized == true && alive == true)
+        {
+            float[] inputs = SensorRead();
+            float[] output = net.FeedForward(inputs);
+            Move(output[0], output[1], output[1], 0.0f);
+        }
+        else
+        {
+            Move(0, 0, 0, 0);
+        }
+    }
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.tag == "wall")
+        {
+            alive = false;
+        }
     }
 
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.tag == "start")
+        {
+            startPoint = true;
+            net.AddFitness(5);
+            other.gameObject.SetActive(false);
+            colliders.Add(other);
+        }
+        if (other.gameObject.tag == "points" && startPoint)
+        {
+            net.AddFitness(5);
+            other.gameObject.SetActive(false);
+            colliders.Add(other);
+        }
+        if (other.gameObject.tag == "end" && startPoint)
+        {
+            net.AddFitness(5);
+            foreach (Collider collider in colliders)
+            {
+                collider.gameObject.SetActive(true);
+            }
+            colliders.Clear();
+        }
+    }
+
+
+    private float[] SensorRead()
+    {
+        float[] sensorsValues = new float[5];
+        RaycastHit hit;
+        Vector3 sensorStartPos = transform.position;
+        sensorStartPos += transform.forward * sensorFrontPositon.z;
+        sensorStartPos += transform.up * sensorFrontPositon.y;
+        if (Physics.Raycast(sensorStartPos, transform.forward, out hit, sensorRange))
+        {
+            sensorsValues[0] = Vector3.Distance(sensorStartPos, hit.point);
+        }
+        else
+        {
+            sensorsValues[0] = -1;
+        }
+
+        sensorStartPos += transform.right * sensorOffset;
+        if (Physics.Raycast(sensorStartPos, transform.forward, out hit, sensorRange))
+        {
+            sensorsValues[1] = Vector3.Distance(sensorStartPos, hit.point);
+        }
+        else
+        {
+            sensorsValues[1] = -1;
+        }
+
+        if (Physics.Raycast(sensorStartPos, Quaternion.AngleAxis(sensorRot, transform.up) * transform.forward, out hit, sensorRange))
+        {
+            sensorsValues[2] = Vector3.Distance(sensorStartPos, hit.point);
+        }
+        else
+        {
+            sensorsValues[2] = -1;
+        }
+
+
+        sensorStartPos -= transform.right * sensorOffset * 2;
+        if (Physics.Raycast(sensorStartPos, transform.forward, out hit, sensorRange))
+        {
+            sensorsValues[3] = Vector3.Distance(sensorStartPos, hit.point);
+        }
+        else
+        {
+            sensorsValues[3] = -1;
+        }
+
+        if (Physics.Raycast(sensorStartPos, Quaternion.AngleAxis(-sensorRot, transform.up) * transform.forward, out hit, sensorRange))
+        {
+            sensorsValues[4] = Vector3.Distance(sensorStartPos, hit.point);
+        }
+        else
+        {
+            sensorsValues[4] = -1;
+        }
+
+        return sensorsValues;
+    }
+
+    public void Init(NeuralNetwork net)
+    {
+        this.net = net;
+        initilized = true;
+    }
 }
 
