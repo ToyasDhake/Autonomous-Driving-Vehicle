@@ -736,7 +736,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Best Candidate
+  m_Text: Follow
 --- !u!222 &1652030279
 CanvasRenderer:
   m_ObjectHideFlags: 0
