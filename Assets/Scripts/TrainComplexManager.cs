@@ -7,20 +7,20 @@ using System.IO;
 
 public class TrainComplexManager : MonoBehaviour
 {
+    // Initialize global variables
     public GameObject individual;
-
     private bool isTraning = false;
-    private int populationSize = 10;
+    private int populationSize = 10;  // Population size
     private int generationNumber = 0;
-    private int[] layers = new int[] { 5, 10, 10, 2 };
+    private int[] layers = new int[] { 5, 10, 10, 2 };   // Network discription
     private List<NeuralNetwork> nets;
-    private List<CarController> boomerangList = null;
+    private List<CarController> carControllerList = null;
     private int count = 0;
     private bool follow = false;
     public GameObject camera;
     public Text txt;
 
-
+    // Timer to kill individuals
     void Timer()
     {
         isTraning = false;
@@ -30,18 +30,22 @@ public class TrainComplexManager : MonoBehaviour
     {
     }
 
-
+    // Loops infinite times
     void Update()
     {
+        // If training or atleast one is alive
         if (isTraning == false || count == 0)
         {
             if (generationNumber == 0)
             {
-                InitBoomerangNeuralNetworks();
+                // Initialize
+                InitCarNeuralNetworks();
             }
             else
             {
+                // Sort nets based on the fitnness
                 nets.Sort();
+                // Save best performing network
                 string path = Application.dataPath + "/NeuralNetworkModels/Generation" + generationNumber.ToString() + ".txt";
                 if (!File.Exists(path))
                 {
@@ -62,6 +66,7 @@ public class TrainComplexManager : MonoBehaviour
                     }
                     File.AppendAllText(path, ";\n");
                 }
+                // Mutate half of the population with lower score
                 for (int i = 0; i < populationSize / 2; i++)
                 {
                     nets[i] = new NeuralNetwork(nets[i + (populationSize / 2)]);
@@ -72,34 +77,37 @@ public class TrainComplexManager : MonoBehaviour
 
             }
 
-
+            // Increment genration count
             generationNumber++;
             txt.text = "Generation number: " + generationNumber.ToString();
             isTraning = true;
+            // Reset timer
             Invoke("Timer", 60f);
-            CreateBoomerangBodies();
+            // Initiate individuals
+            CreateCarBodies();
         }
+        // Get count of alive individuals
         int tempcount = 0;
-        foreach (CarController temp in boomerangList)
+        foreach (CarController temp in carControllerList)
         {
             if (temp.alive == true)
             {
                 tempcount++;
             }
-
         }
         count = tempcount;
-
+        // If follow car set camera coordinates behind car
         if (follow)
         {
             Vector3 cameraRotation = new Vector3(65, 0, 0);
             camera.transform.rotation = Quaternion.Euler(cameraRotation);
-            Vector3 tempVector3 = boomerangList[populationSize - 1].transform.GetChild(0).transform.position;
+            Vector3 tempVector3 = carControllerList[populationSize - 1].transform.GetChild(0).transform.position;
             tempVector3[1] += 10;
             tempVector3[2] -= 5;
             camera.transform.position = tempVector3;
 
         }
+        // Else set camera coordinates in top
         else
         {
             Vector3 cameraRotation = new Vector3(90, 0, 0);
@@ -109,40 +117,39 @@ public class TrainComplexManager : MonoBehaviour
         }
     }
 
-    private void CreateBoomerangBodies()
+    // Create individuals
+    private void CreateCarBodies()
     {
-        if (boomerangList != null)
+        // Destroy all instanses of individuals if list is not empty
+        if (carControllerList != null)
         {
-            for (int i = 0; i < boomerangList.Count; i++)
+            for (int i = 0; i < carControllerList.Count; i++)
             {
-                GameObject.Destroy(boomerangList[i].gameObject);
+                GameObject.Destroy(carControllerList[i].gameObject);
             }
 
         }
-
-        boomerangList = new List<CarController>();
-
+        // Create list of neural networks
+        carControllerList = new List<CarController>();
         for (int i = 0; i < populationSize; i++)
         {
             CarController boomer = (((GameObject)Instantiate(individual, new Vector3((i % 5) * 100, 0, (i / 5) * (-80)), transform.rotation)).transform.GetChild(0).GetComponent("CarController") as CarController);
             boomer.Init(nets[i]);
-            boomerangList.Add(boomer);
-
+            carControllerList.Add(boomer);
         }
         count = populationSize;
     }
 
-    void InitBoomerangNeuralNetworks()
+    // Initialize neural networks
+    void InitCarNeuralNetworks()
     {
-        //population must be even, just setting it to 20 incase it's not
+        // Population must be even, incase it is not
         if (populationSize % 2 != 0)
         {
-            populationSize = 20;
+            populationSize = 10;
         }
-
+        // Create list of neural networks
         nets = new List<NeuralNetwork>();
-
-
         for (int i = 0; i < populationSize; i++)
         {
             NeuralNetwork net = new NeuralNetwork(layers);
@@ -151,10 +158,13 @@ public class TrainComplexManager : MonoBehaviour
         }
     }
 
+    // Follow car
     public void followToggle()
     {
         follow = !follow;
     }
+
+    // Load main menu
     public void back()
     {
         SceneManager.LoadScene(0);

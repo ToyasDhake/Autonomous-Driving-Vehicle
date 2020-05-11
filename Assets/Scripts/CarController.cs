@@ -2,11 +2,9 @@ using System;
 using UnityEngine;
 using System.Collections;
 
-
-
-
 public class CarController : MonoBehaviour
 {
+    // Initialize global variables
     [SerializeField] private WheelCollider[] m_WheelColliders = new WheelCollider[4];
     [SerializeField] private GameObject[] m_WheelMeshes = new GameObject[4];
     [SerializeField] private Vector3 m_CentreOfMassOffset;
@@ -23,21 +21,21 @@ public class CarController : MonoBehaviour
     [SerializeField] private float m_SlipLimit;
     [SerializeField] private float m_BrakeTorque;
 
-
-
+    // Neural network for car
     private bool initilized = false;
     public bool alive = true;
     private NeuralNetwork net;
 
 
-    // the car controller we want to use
+    // Sensor setup
     [Header("Sensors")]
     public float sensorRange;
     public Vector3 sensorFrontPositon;
     public float sensorOffset;
     public float sensorRot;
-
     private bool startPoint = false;
+
+    // Car parameters
     private Quaternion[] m_WheelMeshLocalRotations;
     ArrayList colliders = new ArrayList();
     private float m_SteerAngle;
@@ -47,6 +45,7 @@ public class CarController : MonoBehaviour
     private float m_CurrentTorque;
     private Rigidbody m_Rigidbody;
 
+    // Different subsystems of car
     public bool Skidding { get; private set; }
     public float BrakeInput { get; private set; }
     public float CurrentSteerAngle { get { return m_SteerAngle; } }
@@ -55,9 +54,10 @@ public class CarController : MonoBehaviour
     public float Revs { get; private set; }
     public float AccelInput { get; private set; }
 
-    // Use this for initialization
+    // Initialization
     private void Start()
     {
+        
         m_WheelMeshLocalRotations = new Quaternion[4];
         for (int i = 0; i < 4; i++)
         {
@@ -71,7 +71,7 @@ public class CarController : MonoBehaviour
         m_CurrentTorque = m_FullTorqueOverAllWheels - (m_TractionControl * m_FullTorqueOverAllWheels);
     }
 
-
+    // Gear changing mechanisum
     private void GearChanging()
     {
         float f = Mathf.Abs(CurrentSpeed / MaxSpeed);
@@ -126,6 +126,7 @@ public class CarController : MonoBehaviour
     }
 
 
+    // Move the car by the values of accel and steering for accelaration and steering
     public void Move(float steering, float accel, float footbrake, float handbrake)
     {
         for (int i = 0; i < 4; i++)
@@ -167,7 +168,7 @@ public class CarController : MonoBehaviour
         TractionControl();
     }
 
-
+    // Limit speed
     private void CapSpeed()
     {
         float speed = m_Rigidbody.velocity.magnitude;
@@ -176,7 +177,7 @@ public class CarController : MonoBehaviour
             m_Rigidbody.velocity = (m_Topspeed / 2.23693629f) * m_Rigidbody.velocity.normalized;
     }
 
-
+    // Apply driving force
     private void ApplyDrive(float accel, float footbrake)
     {
         float thrustTorque;
@@ -199,7 +200,7 @@ public class CarController : MonoBehaviour
         }
     }
 
-
+    // Apply steering
     private void SteerHelper()
     {
         for (int i = 0; i < 4; i++)
@@ -239,6 +240,7 @@ public class CarController : MonoBehaviour
     }
 
 
+    // Adjust torque to avoid slippage
     private void AdjustTorque(float forwardSlip)
     {
         if (forwardSlip >= m_SlipLimit && m_CurrentTorque >= 0)
@@ -256,19 +258,27 @@ public class CarController : MonoBehaviour
     }
 
 
+    // This function loops infinite times
     private void FixedUpdate()
     {
+        // If network is alive and loaded
         if (initilized == true && alive == true)
         {
+            // Read Sensors
             float[] inputs = SensorRead();
+            // Feed forward network
             float[] output = net.FeedForward(inputs);
+            // Apply connads to car
             Move(output[0], output[1], output[1], 0.0f);
         }
         else
         {
+            // Stop car
             Move(0, 0, 0, 0);
         }
     }
+
+    // Upon collision with wall kill the individual
     private void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.tag == "wall")
@@ -277,21 +287,27 @@ public class CarController : MonoBehaviour
         }
     }
 
+    // Upon triggering the checkpoint add points.
     private void OnTriggerEnter(Collider other)
     {
+        // Check if the start checkpoint is hit first to avoid AI from learning to drive backwarks
         if (other.gameObject.tag == "start")
         {
             startPoint = true;
             net.AddFitness(5);
+            // Set checkpoint false once achieved
             other.gameObject.SetActive(false);
             colliders.Add(other);
         }
+        // Add points on triggering checkpoint
         if (other.gameObject.tag == "points" && startPoint)
         {
             net.AddFitness(5);
+            // Set checkpoint false once achieved
             other.gameObject.SetActive(false);
             colliders.Add(other);
         }
+        // Reset all the checkpoints once last checkpoint of lap is hit 
         if (other.gameObject.tag == "end" && startPoint)
         {
             net.AddFitness(5);
@@ -304,13 +320,16 @@ public class CarController : MonoBehaviour
     }
 
 
+    // Read sensors
     private float[] SensorRead()
     {
         float[] sensorsValues = new float[5];
+        // Ray Cast Hit acts like a sensor
         RaycastHit hit;
         Vector3 sensorStartPos = transform.position;
         sensorStartPos += transform.forward * sensorFrontPositon.z;
         sensorStartPos += transform.up * sensorFrontPositon.y;
+        // Front center
         if (Physics.Raycast(sensorStartPos, transform.forward, out hit, sensorRange))
         {
             sensorsValues[0] = Vector3.Distance(sensorStartPos, hit.point);
@@ -320,6 +339,7 @@ public class CarController : MonoBehaviour
             sensorsValues[0] = -1;
         }
 
+        // Front Right
         sensorStartPos += transform.right * sensorOffset;
         if (Physics.Raycast(sensorStartPos, transform.forward, out hit, sensorRange))
         {
@@ -330,6 +350,7 @@ public class CarController : MonoBehaviour
             sensorsValues[1] = -1;
         }
 
+        // Right tilt
         if (Physics.Raycast(sensorStartPos, Quaternion.AngleAxis(sensorRot, transform.up) * transform.forward, out hit, sensorRange))
         {
             sensorsValues[2] = Vector3.Distance(sensorStartPos, hit.point);
@@ -339,7 +360,7 @@ public class CarController : MonoBehaviour
             sensorsValues[2] = -1;
         }
 
-
+        // Front left
         sensorStartPos -= transform.right * sensorOffset * 2;
         if (Physics.Raycast(sensorStartPos, transform.forward, out hit, sensorRange))
         {
@@ -350,6 +371,7 @@ public class CarController : MonoBehaviour
             sensorsValues[3] = -1;
         }
 
+        // Left tilt
         if (Physics.Raycast(sensorStartPos, Quaternion.AngleAxis(-sensorRot, transform.up) * transform.forward, out hit, sensorRange))
         {
             sensorsValues[4] = Vector3.Distance(sensorStartPos, hit.point);
@@ -362,6 +384,7 @@ public class CarController : MonoBehaviour
         return sensorsValues;
     }
 
+    // Initialize neural networks
     public void Init(NeuralNetwork net)
     {
         this.net = net;

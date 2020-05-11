@@ -17,6 +17,7 @@ public class ManualCarManager : MonoBehaviour
         
     }
 
+    // Load main menu
     public void back()
     {
         SceneManager.LoadScene(0);

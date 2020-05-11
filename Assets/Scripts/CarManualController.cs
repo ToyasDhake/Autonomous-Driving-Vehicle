@@ -7,6 +7,7 @@ using System.Collections;
 
 public class CarManualController : MonoBehaviour
 {
+    // Initialize global variables
     [SerializeField] private WheelCollider[] m_WheelColliders = new WheelCollider[4];
     [SerializeField] private GameObject[] m_WheelMeshes = new GameObject[4];
     [SerializeField] private Vector3 m_CentreOfMassOffset;
@@ -23,11 +24,8 @@ public class CarManualController : MonoBehaviour
     [SerializeField] private float m_SlipLimit;
     [SerializeField] private float m_BrakeTorque;
 
-
-
-
+    // Car parameters
     private Quaternion[] m_WheelMeshLocalRotations;
-
     private float m_SteerAngle;
     private int m_GearNum;
     private float m_GearFactor;
@@ -35,6 +33,7 @@ public class CarManualController : MonoBehaviour
     private float m_CurrentTorque;
     private Rigidbody m_Rigidbody;
 
+    // Different subsystems of car
     public bool Skidding { get; private set; }
     public float BrakeInput { get; private set; }
     public float CurrentSteerAngle { get { return m_SteerAngle; } }
@@ -43,6 +42,7 @@ public class CarManualController : MonoBehaviour
     public float Revs { get; private set; }
     public float AccelInput { get; private set; }
 
+    // Initialization
     private void Start()
     {
         m_WheelMeshLocalRotations = new Quaternion[4];
@@ -59,7 +59,7 @@ public class CarManualController : MonoBehaviour
 
     }
 
-
+    // Gear changing mechanisum
     private void GearChanging()
     {
         float f = Mathf.Abs(CurrentSpeed / MaxSpeed);
@@ -113,7 +113,7 @@ public class CarManualController : MonoBehaviour
         Revs = ULerp(revsRangeMin, revsRangeMax, m_GearFactor);
     }
 
-
+    // Move the car by the values of accel and steering for accelaration and steering
     public void Move(float steering, float accel, float footbrake, float handbrake)
     {
         for (int i = 0; i < 4; i++)
@@ -149,44 +149,30 @@ public class CarManualController : MonoBehaviour
             m_WheelColliders[2].brakeTorque = hbTorque;
             m_WheelColliders[3].brakeTorque = hbTorque;
         }
-
-
         CalculateRevs();
         GearChanging();
-
         AddDownForce();
         TractionControl();
     }
 
-
+    // Limit speed
     private void CapSpeed()
     {
         float speed = m_Rigidbody.velocity.magnitude;
-
-
         speed *= 2.23693629f;
         if (speed > m_Topspeed)
             m_Rigidbody.velocity = (m_Topspeed / 2.23693629f) * m_Rigidbody.velocity.normalized;
-
-
-
     }
 
-
+    // Apply driving force
     private void ApplyDrive(float accel, float footbrake)
     {
-
         float thrustTorque;
-
         thrustTorque = accel * (m_CurrentTorque / 4f);
         for (int i = 0; i < 4; i++)
         {
             m_WheelColliders[i].motorTorque = thrustTorque;
         }
-
-
-
-
         for (int i = 0; i < 4; i++)
         {
             if (CurrentSpeed > 5 && Vector3.Angle(transform.forward, m_Rigidbody.velocity) < 50f)
@@ -201,7 +187,7 @@ public class CarManualController : MonoBehaviour
         }
     }
 
-
+    // Apply steering
     private void SteerHelper()
     {
         for (int i = 0; i < 4; i++)
@@ -221,13 +207,14 @@ public class CarManualController : MonoBehaviour
         m_OldRotation = transform.eulerAngles.y;
     }
 
-
+    // this is used to add more grip in relation to speed
     private void AddDownForce()
     {
         m_WheelColliders[0].attachedRigidbody.AddForce(-transform.up * m_Downforce *
                                                      m_WheelColliders[0].attachedRigidbody.velocity.magnitude);
     }
 
+    // crude traction control that reduces the power to wheel if the car is wheel spinning too much
     private void TractionControl()
     {
         WheelHit wheelHit;
@@ -242,7 +229,7 @@ public class CarManualController : MonoBehaviour
 
     }
 
-
+    // Adjust torque to avoid slippage
     private void AdjustTorque(float forwardSlip)
     {
         if (forwardSlip >= m_SlipLimit && m_CurrentTorque >= 0)
@@ -260,17 +247,13 @@ public class CarManualController : MonoBehaviour
     }
 
 
-
-
+    // This function loops infinite times
     private void FixedUpdate()
     {
         // pass the input to the car!
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
         Move(h, v, v, 0f);
-
-
     }
-
 }
 

@@ -13,10 +13,11 @@ public class TestSimpleManager : MonoBehaviour
     public GameObject individual;
     private bool follow = false;
     public GameObject camera;
-    private CarController boomer;
+    private CarController carController;
 
     void Start()
     {
+        // Initialize array for weights
         weights[0] = new float[10][];
         weights[1] = new float[10][];
         weights[2] = new float[2][];
@@ -26,6 +27,7 @@ public class TestSimpleManager : MonoBehaviour
             weights[1][i] = new float[10];
         for (int i = 0; i < 2; i++)
             weights[2][i] = new float[10];
+        // Read weights from model file
         string path = Application.dataPath + "/TrainedModel.txt";
         StreamReader reader = new StreamReader(path);
         for (int i = 0; i < 10; i++)
@@ -52,24 +54,27 @@ public class TestSimpleManager : MonoBehaviour
                 weights[2][i][j] = float.Parse(vals[j]);
         }
         reader.Close();
+        // Initialize car and control network
         net = new NeuralNetwork(weights);
-        boomer = ((GameObject)Instantiate(individual, new Vector3(0, 0, 0), transform.rotation)).transform.GetChild(0).GetComponent("CarController") as CarController;
-        boomer.Init(net);
+        carController = ((GameObject)Instantiate(individual, new Vector3(0, 0, 0), transform.rotation)).transform.GetChild(0).GetComponent("CarController") as CarController;
+        carController.Init(net);
     }
 
     // Update is called once per frame
     void Update()
     {
+        // If follow set camera coordinates behind car
         if (follow)
         {
             Vector3 cameraRotation = new Vector3(65, 0, 0);
             camera.transform.rotation = Quaternion.Euler(cameraRotation);
-            Vector3 tempVector3 = boomer.transform.GetChild(0).transform.position;
+            Vector3 tempVector3 = carController.transform.GetChild(0).transform.position;
             tempVector3[1] += 10;
             tempVector3[2] -= 5;
             camera.transform.position = tempVector3;
 
         }
+        // Else set camera coordinates in top
         else
         {
             Vector3 cameraRotation = new Vector3(90, 0, 0);
@@ -79,10 +84,12 @@ public class TestSimpleManager : MonoBehaviour
         }
     }
 
+    // Load main menu
     public void back()
     {
         SceneManager.LoadScene(0);
     }
+    // Follow car
     public void followToggle()
     {
         follow = !follow;
